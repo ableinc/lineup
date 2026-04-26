@@ -2,7 +2,14 @@ import { useNavigate, useParams } from "@solidjs/router";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import type { Component } from "solid-js";
-import { createResource, createSignal, For, onCleanup, Show } from "solid-js";
+import {
+	createEffect,
+	createResource,
+	createSignal,
+	For,
+	onCleanup,
+	Show,
+} from "solid-js";
 import FileTree from "@/components/FileTree";
 import ProgressModal from "@/components/ProgressModal";
 import ScanOptionsModal from "@/components/ScanOptionsModal";
@@ -37,6 +44,13 @@ const ScanResults: Component = () => {
 	const [selectedStruct, setSelectedStruct] = createSignal<StructDetail | null>(
 		null,
 	);
+
+	createEffect(() => {
+		const f = files();
+		if (f && f.length > 0 && selectedFile() === null) {
+			setSelectedFile(f[0].file_path);
+		}
+	});
 
 	// Resizable pane widths (in px)
 	const [leftWidth, setLeftWidth] = createSignal<number>(12 * 16); // smaller default left pane (12rem)

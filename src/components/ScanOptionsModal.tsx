@@ -77,8 +77,8 @@ const ScanOptionsModal: Component<Props> = (props) => {
 									onClick={() => setArch("amd64")}
 									class={`px-4 py-2 text-sm font-medium transition-colors ${
 										arch() === "amd64"
-											? "bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900"
-											: "text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
+											? "bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 cursor-default"
+											: "text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 cursor-pointer"
 									}`}
 								>
 									x86_64
@@ -88,8 +88,8 @@ const ScanOptionsModal: Component<Props> = (props) => {
 									onClick={() => setArch("arm64")}
 									class={`px-4 py-2 text-sm font-medium border-l border-neutral-200 dark:border-neutral-800 transition-colors ${
 										arch() === "arm64"
-											? "bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900"
-											: "text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
+											? "bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 cursor-default"
+											: "text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 cursor-pointer"
 									}`}
 								>
 									ARM64
@@ -133,14 +133,14 @@ const ScanOptionsModal: Component<Props> = (props) => {
 							<button
 								type="button"
 								onClick={props.onCancel}
-								class="text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors px-4 py-2 border border-neutral-200 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-600"
+								class="text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors px-4 py-2 border border-neutral-200 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-600 cursor-pointer"
 							>
 								Cancel
 							</button>
 							<button
 								type="button"
 								onClick={submit}
-								class="text-sm bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 font-medium px-4 py-2 hover:opacity-80 transition-opacity"
+								class="text-sm bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 font-medium px-4 py-2 hover:opacity-80 transition-opacity cursor-pointer"
 							>
 								Start Scan
 							</button>

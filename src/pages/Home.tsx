@@ -23,6 +23,9 @@ const Home: Component = () => {
 		pct: 0,
 	});
 	const [showClearConfirm, setShowClearConfirm] = createSignal(false);
+	const [pendingDeleteId, setPendingDeleteId] = createSignal<number | null>(
+		null,
+	);
 	const [cancelFn, setCancelFn] = createSignal<(() => void) | null>(null);
 
 	const loadHistory = async () => {
@@ -83,6 +86,7 @@ const Home: Component = () => {
 
 	const deleteScan = async (id: number) => {
 		await invoke("delete_scan", { scanId: id });
+		setPendingDeleteId(null);
 		await loadHistory();
 	};
 
@@ -156,7 +160,7 @@ const Home: Component = () => {
 									<HistoryCard
 										scan={scan}
 										onView={() => navigate(`/scan/${scan.id}`)}
-										onDelete={() => deleteScan(scan.id)}
+										onDelete={() => setPendingDeleteId(scan.id)}
 									/>
 								)}
 							</For>
@@ -196,6 +200,15 @@ const Home: Component = () => {
 				confirmLabel="Clear All"
 				onConfirm={clearAll}
 				onCancel={() => setShowClearConfirm(false)}
+			/>
+
+			<AlertDialog
+				open={pendingDeleteId() !== null}
+				title="Delete scan?"
+				message="This will permanently delete this scan record. This action cannot be undone."
+				confirmLabel="Delete"
+				onConfirm={() => deleteScan(pendingDeleteId()!)}
+				onCancel={() => setPendingDeleteId(null)}
 			/>
 		</div>
 	);

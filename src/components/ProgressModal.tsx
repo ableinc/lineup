@@ -43,7 +43,7 @@ const ProgressModal: Component<Props> = (props) => {
 							<button
 								type="button"
 								onClick={props.onCancel}
-								class="text-xs text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors px-3 py-1.5 border border-neutral-200 dark:border-neutral-800"
+								class="text-xs text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors px-3 py-1.5 border border-neutral-200 dark:border-neutral-800 cursor-pointer"
 							>
 								Cancel
 							</button>
