@@ -94,7 +94,7 @@ Scan data is stored in a SQLite database inside the app's local data directory. 
 
 ## License
 
-MIT. See [package.json](package.json).
+MIT.
 
 ---
 
