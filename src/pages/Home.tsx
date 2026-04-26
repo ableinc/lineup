@@ -84,7 +84,11 @@ const Home: Component = () => {
 		toast.error("Scan cancelled");
 	};
 
-	const deleteScan = async (id: number) => {
+	const deleteScan = async (id: number | null) => {
+		if (id === null) {
+			toast.error("No scan selected for deletion");
+			return;
+		};
 		await invoke("delete_scan", { scanId: id });
 		setPendingDeleteId(null);
 		await loadHistory();
@@ -207,7 +211,7 @@ const Home: Component = () => {
 				title="Delete scan?"
 				message="This will permanently delete this scan record. This action cannot be undone."
 				confirmLabel="Delete"
-				onConfirm={() => deleteScan(pendingDeleteId()!)}
+				onConfirm={() => deleteScan(pendingDeleteId())}
 				onCancel={() => setPendingDeleteId(null)}
 			/>
 		</div>
