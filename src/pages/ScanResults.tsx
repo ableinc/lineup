@@ -2,8 +2,7 @@ import { useNavigate, useParams } from "@solidjs/router";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import type { Component } from "solid-js";
-import { createResource, createSignal, For, Show } from "solid-js";
-import { onCleanup } from "solid-js";
+import { createResource, createSignal, For, onCleanup, Show } from "solid-js";
 import FileTree from "@/components/FileTree";
 import ProgressModal from "@/components/ProgressModal";
 import ScanOptionsModal from "@/components/ScanOptionsModal";
@@ -43,7 +42,11 @@ const ScanResults: Component = () => {
 	const [leftWidth, setLeftWidth] = createSignal<number>(12 * 16); // smaller default left pane (12rem)
 	const [rightWidth, setRightWidth] = createSignal<number>(520); // larger detail panel to shrink list view
 
-	let dragging: { type: "left" | "right"; startX: number; startWidth: number } | null = null;
+	let dragging: {
+		type: "left" | "right";
+		startX: number;
+		startWidth: number;
+	} | null = null;
 
 	const onMouseMove = (e: MouseEvent) => {
 		if (!dragging) return;
@@ -165,12 +168,17 @@ const ScanResults: Component = () => {
 					class="w-2 cursor-col-resize hover:bg-neutral-100 dark:hover:bg-neutral-800 shrink-0 p-0 m-0"
 					aria-label="Resize file list"
 					onMouseDown={(e) => {
-						dragging = { type: "left", startX: e.clientX, startWidth: leftWidth() };
+						dragging = {
+							type: "left",
+							startX: e.clientX,
+							startWidth: leftWidth(),
+						};
 						window.addEventListener("mousemove", onMouseMove);
 						window.addEventListener("mouseup", onMouseUp);
 					}}
 					onKeyDown={(e: KeyboardEvent) => {
-						if (e.key === "ArrowLeft") setLeftWidth((w) => Math.max(120, w - 12));
+						if (e.key === "ArrowLeft")
+							setLeftWidth((w) => Math.max(120, w - 12));
 						if (e.key === "ArrowRight") setLeftWidth((w) => w + 12);
 					}}
 				/>
@@ -199,12 +207,17 @@ const ScanResults: Component = () => {
 					class="w-2 cursor-col-resize hover:bg-neutral-100 dark:hover:bg-neutral-800 shrink-0 p-0 m-0"
 					aria-label="Resize detail panel"
 					onMouseDown={(e) => {
-						dragging = { type: "right", startX: e.clientX, startWidth: rightWidth() };
+						dragging = {
+							type: "right",
+							startX: e.clientX,
+							startWidth: rightWidth(),
+						};
 						window.addEventListener("mousemove", onMouseMove);
 						window.addEventListener("mouseup", onMouseUp);
 					}}
 					onKeyDown={(e: KeyboardEvent) => {
-						if (e.key === "ArrowLeft") setRightWidth((w) => Math.max(200, w - 12));
+						if (e.key === "ArrowLeft")
+							setRightWidth((w) => Math.max(200, w - 12));
 						if (e.key === "ArrowRight") setRightWidth((w) => w + 12);
 					}}
 				/>

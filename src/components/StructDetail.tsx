@@ -1,7 +1,7 @@
 import type { Component } from "solid-js";
 import { createSignal } from "solid-js";
-import type { StructDetail } from "@/types";
 import toast from "solid-toast";
+import type { StructDetail } from "@/types";
 
 interface Props {
 	detail: StructDetail;

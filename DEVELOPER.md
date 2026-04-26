@@ -101,6 +101,12 @@ Opens the frontend at `http://localhost:1420`. Tauri backend commands are unavai
 pnpm tauri:build
 ```
 
+```bash
+pnpm tauri build --bundles dmg -t aarch64-apple-darwin -v
+```
+
+> Bundle for distribution
+
 The compiled installer and binary are placed in `src-tauri/target/release/bundle/`. The exact format depends on the host OS: `.dmg` / `.app` on macOS, `.msi` / `.exe` on Windows, `.deb` / `.rpm` / `.AppImage` on Linux.
 
 The `tauri.conf.json` `bundle.targets` field is set to `"all"` so all applicable formats are produced per platform.

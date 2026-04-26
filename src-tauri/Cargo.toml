@@ -1,8 +1,8 @@
 [package]
-name = "lineup"
-version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
+name = "Lineup"
+version = "1.0.0"
+description = "Lineup is a desktop app that scans Go repositories and finds struct types that waste memory due to field padding"
+authors = ["Jaylen Douglas"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
