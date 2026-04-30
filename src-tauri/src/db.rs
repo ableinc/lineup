@@ -82,7 +82,7 @@ pub fn init_db(conn: &Connection) -> Result<()> {
          );",
     )?;
     // Additive migrations — silently ignored on existing databases
-    let _ = conn.execute("ALTER TABLE scans ADD COLUMN language TEXT NOT NULL DEFAULT 'go'", []);
+    let _ = conn.execute("ALTER TABLE scans ADD COLUMN language TEXT NOT NULL DEFAULT 'GO'", []);
     let _ = conn.execute("ALTER TABLE struct_results ADD COLUMN declaration_kind TEXT NOT NULL DEFAULT 'struct'", []);
     Ok(())
 }
@@ -102,7 +102,7 @@ pub fn save_scan(
     conn.execute(
         "INSERT INTO scans (repo_path, scanned_at, total_structs, padded_structs, bytes_saved, ignore_patterns, target_arch, language)
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
-        params![repo_path, scanned_at, total_structs, padded_structs, bytes_saved, patterns_json, target_arch, language],
+        params![repo_path, scanned_at, total_structs, padded_structs, bytes_saved, patterns_json, target_arch, language.to_uppercase()],
     )?;
     Ok(conn.last_insert_rowid())
 }
@@ -155,7 +155,7 @@ pub fn get_history(conn: &Connection) -> Result<Vec<ScanSummary>> {
             bytes_saved: row.get(5)?,
             ignore_patterns,
             target_arch: row.get(7)?,
-            language: row.get::<_, Option<String>>(8)?.unwrap_or_else(|| "go".to_string()),
+            language: row.get::<_, Option<String>>(8)?.unwrap_or_else(|| "GO".to_string().to_uppercase()),
         })
     })?;
     rows.collect()

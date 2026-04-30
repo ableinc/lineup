@@ -57,8 +57,8 @@ async fn scan_repo(
 
     let arch: Arch = opts.target_arch.parse().unwrap_or(Arch::Amd64);
     let ignore_patterns = opts.ignore_patterns.clone();
-    let language = opts.language.clone();
-    let is_typescript = language == "typescript";
+    let language = opts.language.clone().to_uppercase();
+    let is_typescript = language == "TS";
 
     let _ = app.emit(
         "scan-progress",

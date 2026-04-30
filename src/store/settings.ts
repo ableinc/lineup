@@ -7,7 +7,7 @@ const defaultSettings: AppSettings = {
 	theme: "dark",
 	defaultArch: "amd64",
 	defaultIgnorePatterns: [],
-	defaultLanguage: "go",
+	defaultLanguage: "GO",
 };
 
 function loadSettings(): AppSettings {

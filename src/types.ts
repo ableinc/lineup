@@ -1,4 +1,4 @@
-export type PARSER_LANGUAGE = "go" | "typescript";
+export type PARSER_LANGUAGE = "GO" | "TS";
 
 export interface ScanSummary {
 	id: number;

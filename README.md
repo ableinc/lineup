@@ -26,10 +26,13 @@ No changes are made to your code. Lineup only reads and reports.
 
 ![Home screen](screenshots/home.png)
 
-**Scan results** — three-pane view: file tree on the left, struct list in the center, and field-level detail on the right.
+**Scan results - GO** — three-pane view: file tree on the left, struct list in the center, and field-level detail on the right.
 
-![Scan results](screenshots/scan.png)
+![Scan results - TS](screenshots/scan.png "Go Scan Results")
 
+**Scan results - TS**
+
+![Scan results - TS](screenshots/scan-ts.png "Typescript Scan Results")
 ---
 
 ## Using the App

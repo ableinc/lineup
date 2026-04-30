@@ -99,9 +99,9 @@ const Settings: Component = () => {
 								<div class="flex gap-0 border border-neutral-200 dark:border-neutral-800">
 									<button
 										type="button"
-										onClick={() => updateSettings({ defaultLanguage: "go" })}
+										onClick={() => updateSettings({ defaultLanguage: "GO" })}
 										class={`px-4 py-2 text-sm font-medium transition-colors ${
-											settings.defaultLanguage === "go"
+											settings.defaultLanguage === "GO"
 												? "bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 cursor-default"
 												: "text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 cursor-pointer"
 										}`}
@@ -110,11 +110,9 @@ const Settings: Component = () => {
 									</button>
 									<button
 										type="button"
-										onClick={() =>
-											updateSettings({ defaultLanguage: "typescript" })
-										}
+										onClick={() => updateSettings({ defaultLanguage: "TS" })}
 										class={`px-4 py-2 text-sm font-medium border-l border-neutral-200 dark:border-neutral-800 transition-colors ${
-											settings.defaultLanguage === "typescript"
+											settings.defaultLanguage === "TS"
 												? "bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 cursor-default"
 												: "text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 cursor-pointer"
 										}`}

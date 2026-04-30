@@ -168,7 +168,7 @@ lineup/
 
 Defines `AppState` (the Tauri managed state), all `#[tauri::command]` handlers, and the `tauri::Builder` setup. `AppState` holds a `Mutex<rusqlite::Connection>` and an `Arc<AtomicBool>` cancel flag.
 
-`ScanOptions` carries a `language` field (`"go"` or `"typescript"`) that controls which walker and analyzer are invoked by `scan_repo`.
+`ScanOptions` carries a `language` field (`"GO"` or `"TS"`) that controls which walker and analyzer are invoked by `scan_repo`.
 
 ### `db.rs`
 
@@ -186,7 +186,7 @@ All database logic. Initializes the schema on first run and exposes typed functi
 | `bytes_saved` | INTEGER | Sum across all declarations |
 | `ignore_patterns` | TEXT | JSON array of regex strings |
 | `target_arch` | TEXT | `"amd64"` or `"arm64"` |
-| `language` | TEXT | `"go"` or `"typescript"` (added in 1.1.0; defaults to `"go"` for existing rows) |
+| `language` | TEXT | `"GO"` or `"TS"` (added in 1.1.0; defaults to `"GO"` for existing rows) |
 
 **Schema — `struct_results` table**
 
@@ -264,9 +264,34 @@ Types with generics (`has_generics`) or that extend/implement other types (`has_
 
 ---
 
-## Tauri Command API
+## Data & Log Locations
 
-All commands are invoked from the frontend via `@tauri-apps/api/core` `invoke()`. Errors are returned as rejected promises (the Rust `Err(String)` maps to a JS string rejection).
+The bundle identifier is **`com.capabletechnology.lineup`**.
+
+### SQLite database
+
+The database file is created on first launch at `{app_data_dir}/lineup.db`.
+
+| Platform | Path |
+|---|---|
+| macOS | `~/Library/Application Support/com.capabletechnology.lineup/lineup.db` |
+| Linux | `$XDG_DATA_HOME/com.capabletechnology.lineup/lineup.db` (typically `~/.local/share/com.capabletechnology.lineup/lineup.db`) |
+| Windows | `%APPDATA%\com.capabletechnology.lineup\lineup.db` (e.g. `C:\Users\<user>\AppData\Roaming\com.capabletechnology.lineup\lineup.db`) |
+
+Deleting the file resets all scan history. The app will re-create the schema automatically on next launch.
+
+### Logs
+
+Lineup does not use `tauri-plugin-log` — no log files are written to disk.
+
+- **Development** (`pnpm tauri:dev`): Rust `println!`/`eprintln!` output appears in the terminal that launched the dev command. Frontend `console.*` output appears in the WebView DevTools (right-click → Inspect, or `Ctrl+Shift+I` / `Cmd+Option+I`).
+- **Production**: stdout/stderr is captured by the host OS. Use the platform system log viewer to inspect it:
+
+| Platform | How to view |
+|---|---|
+| macOS | **Console.app** → filter by `com.capabletechnology.lineup`, or `log stream --predicate 'process == "Lineup"'` in Terminal |
+| Linux | `journalctl -f` (if launched via systemd) or redirect stdout/stderr when launching from the command line |
+| Windows | **Event Viewer** → Windows Logs → Application, or launch from a terminal to capture stdout/stderr directly | via `@tauri-apps/api/core` `invoke()`. Errors are returned as rejected promises (the Rust `Err(String)` maps to a JS string rejection).
 
 ---
 
@@ -299,7 +324,7 @@ invoke<ScanSummary>('scan_repo', {
 interface ScanOptions {
   ignore_patterns: string[];  // regex strings; matched against repo-relative file paths
   target_arch: string;        // "amd64" | "arm64" (used only when language is "go")
-  language: string;           // "go" | "typescript"
+  language: string;           // "GO" | "TS"
 }
 ```
 
@@ -349,7 +374,7 @@ interface ScanSummary {
   bytes_saved: number;
   ignore_patterns: string[];
   target_arch: string;      // "amd64" | "arm64"
-  language: string;         // "go" | "typescript"
+  language: string;         // "GO" | "TS"
 }
 ```
 
@@ -489,4 +514,4 @@ Run `pnpm format` and `pnpm lint` before submitting a pull request.
 - Follow the output's suggestions to install the missing dependencies before re-running any build
 
 **Database errors on startup**
-- The SQLite file lives in the platform app-data directory. Delete `lineup.db` in that directory to reset state (all scan history will be lost).
+- The SQLite file lives at the path shown in the [Data & Log Locations](#data--log-locations) section above. Delete `lineup.db` in that directory to reset state (all scan history will be lost).

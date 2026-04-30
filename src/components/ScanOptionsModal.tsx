@@ -14,7 +14,7 @@ interface Props {
 
 const ScanOptionsModal: Component<Props> = (props) => {
 	const [language, setLanguage] = createSignal(
-		props.initialOptions?.language ?? "go",
+		props.initialOptions?.language ?? "GO",
 	);
 	const [arch, setArch] = createSignal(
 		props.initialOptions?.target_arch ?? "amd64",
@@ -82,9 +82,9 @@ const ScanOptionsModal: Component<Props> = (props) => {
 							<div class="flex gap-0 border border-neutral-200 dark:border-neutral-800 w-fit">
 								<button
 									type="button"
-									onClick={() => setLanguage("go")}
+									onClick={() => setLanguage("GO")}
 									class={`px-4 py-2 text-sm font-medium transition-colors ${
-										language() === "go"
+										language() === "GO"
 											? "bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 cursor-default"
 											: "text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 cursor-pointer"
 									}`}
@@ -93,9 +93,9 @@ const ScanOptionsModal: Component<Props> = (props) => {
 								</button>
 								<button
 									type="button"
-									onClick={() => setLanguage("typescript")}
+									onClick={() => setLanguage("TS")}
 									class={`px-4 py-2 text-sm font-medium border-l border-neutral-200 dark:border-neutral-800 transition-colors ${
-										language() === "typescript"
+										language() === "TS"
 											? "bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 cursor-default"
 											: "text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 cursor-pointer"
 									}`}
@@ -104,14 +104,14 @@ const ScanOptionsModal: Component<Props> = (props) => {
 								</button>
 							</div>
 							<p class="text-xs text-neutral-400 mt-1.5">
-								{language() === "typescript"
+								{language() === "TS"
 									? "Scans .ts / .tsx files for V8 JIT layout inefficiencies."
 									: "Scans .go files for struct field padding waste."}
 							</p>
 						</div>
 
 						{/* Architecture — only relevant for Go */}
-						<Show when={language() === "go"}>
+						<Show when={language() === "GO"}>
 							<div class="mb-5">
 								<p class="text-xs font-medium text-neutral-500 uppercase tracking-widest mb-2">
 									Target Architecture

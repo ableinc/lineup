@@ -17,9 +17,14 @@ const HistoryCard: Component<Props> = (props) => {
 	return (
 		<div class="border-b border-neutral-100 dark:border-neutral-900 px-0 py-4 flex items-center justify-between gap-4">
 			<div class="min-w-0">
-				<p class="text-sm font-mono text-neutral-900 dark:text-neutral-100 truncate">
-					{props.scan.repo_path}
-				</p>
+				<div class="flex items-center gap-2">
+					<p class="text-sm font-mono text-neutral-900 dark:text-neutral-100 truncate">
+						{props.scan.repo_path}
+					</p>
+					<span class="shrink-0 text-xs px-1.5 py-0.5 border border-neutral-300 dark:border-neutral-700 text-neutral-400 font-mono">
+						{props.scan.language.toLocaleUpperCase()}
+					</span>
+				</div>
 				<div class="flex items-center gap-4 mt-1 text-xs text-neutral-400">
 					<span>{fmt(props.scan.scanned_at)}</span>
 					<span>{props.scan.total_structs} structs</span>
