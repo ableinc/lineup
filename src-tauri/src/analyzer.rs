@@ -1,5 +1,6 @@
 use std::collections::HashMap;
-use crate::parser::{GoField, GoFile, GoStruct};
+use crate::go_parser::{GoField, GoFile, GoStruct};
+use crate::ts_parser::{TsDeclaration, TsField, TsFile};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -132,6 +133,8 @@ pub struct AnalyzedStruct {
     pub has_generics: bool,
     pub has_embedded: bool,
     pub approximate: bool,
+    /// "struct" for Go, "class" / "interface" / "type" for TypeScript.
+    pub declaration_kind: String,
 }
 
 pub fn analyze_files(files: &[GoFile], arch: Arch) -> Vec<(String, AnalyzedStruct)> {
@@ -262,8 +265,133 @@ fn analyze_struct(
         has_generics,
         has_embedded,
         approximate,
+        declaration_kind: "struct".to_string(),
     })
 }
+
+// ---------------------------------------------------------------------------
+// TypeScript / V8 analysis
+// ---------------------------------------------------------------------------
+
+/// V8 JIT type-size model (64-bit, pointer compression enabled).
+/// `number` fields are stored as unboxed 8-byte doubles.
+/// Everything else is a 4-byte tagged/compressed pointer.
+pub fn ts_type_info(type_str: &str) -> TypeInfo {
+    match type_str.trim() {
+        "number" => TypeInfo { size: 8, align: 8, approximate: false },
+        "any" | "unknown" | "never" | "void" => TypeInfo { size: 4, align: 4, approximate: true },
+        _ => TypeInfo { size: 4, align: 4, approximate: false },
+    }
+}
+
+pub fn analyze_ts_files(files: &[TsFile]) -> Vec<(String, AnalyzedStruct)> {
+    let mut results = Vec::new();
+    for file in files {
+        for decl in &file.declarations {
+            if let Some(analyzed) = analyze_ts_decl(decl) {
+                results.push((file.path.clone(), analyzed));
+            }
+        }
+    }
+    results
+}
+
+fn analyze_ts_decl(decl: &TsDeclaration) -> Option<AnalyzedStruct> {
+    if decl.fields.is_empty() {
+        return None;
+    }
+
+    let has_generics = decl.type_params.is_some();
+    let has_embedded = decl.has_extends;
+    let mut approximate = has_generics || has_embedded;
+
+    let field_infos: Vec<(TypeInfo, &TsField)> = decl
+        .fields
+        .iter()
+        .map(|f| {
+            let info = ts_type_info(&f.type_str);
+            if info.approximate {
+                approximate = true;
+            }
+            (info, f)
+        })
+        .collect();
+
+    let current_fields: Vec<(TypeInfo, String)> = field_infos
+        .iter()
+        .map(|(info, f)| (info.clone(), f.name.clone()))
+        .collect();
+    let (current_size, _) = struct_layout(&current_fields);
+
+    // Optimal: numbers (8B) first, then everything else, stable by name within each group.
+    let mut sorted = field_infos.clone();
+    sorted.sort_by(|(a_info, a_field), (b_info, b_field)| {
+        b_info
+            .align
+            .cmp(&a_info.align)
+            .then(b_info.size.cmp(&a_info.size))
+            .then(a_field.name.cmp(&b_field.name))
+    });
+    let optimal_fields: Vec<(TypeInfo, String)> = sorted
+        .iter()
+        .map(|(info, f)| (info.clone(), f.name.clone()))
+        .collect();
+    let (optimal_size, _) = struct_layout(&optimal_fields);
+
+    let bytes_saved = current_size.saturating_sub(optimal_size);
+
+    let current_refs: Vec<&TsField> = decl.fields.iter().collect();
+    let current_def = build_ts_def(decl, &current_refs, false);
+    let sorted_fields: Vec<&TsField> = sorted.iter().map(|(_, f)| *f).collect();
+    let optimized_def = build_ts_def(decl, &sorted_fields, true);
+
+    Some(AnalyzedStruct {
+        name: decl.name.clone(),
+        type_params: decl.type_params.clone(),
+        line_number: decl.line_number,
+        current_size,
+        optimal_size,
+        bytes_saved,
+        current_def,
+        optimized_def,
+        has_generics,
+        has_embedded,
+        approximate,
+        declaration_kind: decl.kind.as_str().to_string(),
+    })
+}
+
+fn build_ts_def(decl: &TsDeclaration, fields: &[&TsField], optimized: bool) -> String {
+    use crate::ts_parser::TsDeclKind;
+    let mut lines: Vec<String> = Vec::new();
+
+    for doc in &decl.doc_comments {
+        lines.push(doc.clone());
+    }
+    if optimized {
+        lines.push("// Reordered for optimal V8 memory layout".to_string());
+    }
+
+    let tp = decl.type_params.as_deref().unwrap_or("");
+    let header = match decl.kind {
+        TsDeclKind::Class => format!("class {}{} {{", decl.name, tp),
+        TsDeclKind::Interface => format!("interface {}{} {{", decl.name, tp),
+        TsDeclKind::TypeAlias => format!("type {}{} = {{", decl.name, tp),
+    };
+    lines.push(header);
+
+    for field in fields {
+        lines.push(format!("\t{}", field.raw_line.trim()));
+    }
+
+    let footer = if decl.kind == TsDeclKind::TypeAlias { "};" } else { "}" };
+    lines.push(footer.to_string());
+    lines.join("\n")
+}
+
+// ---------------------------------------------------------------------------
+// Go analysis (unchanged)
+// ---------------------------------------------------------------------------
 
 fn build_def(s: &GoStruct, fields: &[&GoField], optimized: bool) -> String {
     let mut lines: Vec<String> = Vec::new();

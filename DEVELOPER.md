@@ -20,6 +20,7 @@ For user-facing documentation see [README.md](README.md).
 | Persistence | SQLite via [rusqlite](https://github.com/rusqlite/rusqlite) (bundled) |
 | Directory walking | [ignore](https://crates.io/crates/ignore) |
 | Regex | [regex](https://crates.io/crates/regex) |
+| TypeScript parsing | [oxc_parser](https://crates.io/crates/oxc_parser) 0.128 (pure Rust) |
 
 ---
 
@@ -127,8 +128,8 @@ lineup/
 │   │   ├── FileTree.tsx        # Left-pane file tree on results screen
 │   │   ├── HistoryCard.tsx     # Scan history card on home screen
 │   │   ├── ProgressModal.tsx   # Scan progress overlay with cancel
-│   │   ├── ScanOptionsModal.tsx# Pre-scan config (arch, ignore patterns)
-│   │   ├── StructCard.tsx      # Per-struct summary card
+│   │   ├── ScanOptionsModal.tsx# Pre-scan config (language, arch, ignore patterns)
+│   │   ├── StructCard.tsx      # Per-declaration summary card
 │   │   └── StructDetail.tsx    # Right-pane detail view with copy button
 │   ├── pages/
 │   │   ├── Home.tsx            # Home / history screen
@@ -150,7 +151,8 @@ lineup/
 │       ├── lib.rs              # Tauri commands, managed state, app setup
 │       ├── db.rs               # SQLite schema, queries, data types
 │       ├── parser.rs           # Go source walker and struct parser
-│       └── analyzer.rs         # Padding analyzer and optimal-order engine
+│       ├── ts_parser.rs        # TypeScript source walker and declaration parser
+│       └── analyzer.rs         # Padding analyzer and optimal-order engine (Go + TS)
 ├── public/                     # Static assets
 ├── biome.json                  # Biome linter / formatter config
 ├── vite.config.ts
@@ -166,6 +168,8 @@ lineup/
 
 Defines `AppState` (the Tauri managed state), all `#[tauri::command]` handlers, and the `tauri::Builder` setup. `AppState` holds a `Mutex<rusqlite::Connection>` and an `Arc<AtomicBool>` cancel flag.
 
+`ScanOptions` carries a `language` field (`"go"` or `"typescript"`) that controls which walker and analyzer are invoked by `scan_repo`.
+
 ### `db.rs`
 
 All database logic. Initializes the schema on first run and exposes typed functions for every persistence operation. The SQLite file is stored in the platform app-data directory resolved by `tauri::Manager::path().app_data_dir()`.
@@ -178,10 +182,11 @@ All database logic. Initializes the schema on first run and exposes typed functi
 | `repo_path` | TEXT | Absolute path to the scanned directory |
 | `scanned_at` | INTEGER | Unix timestamp (seconds) |
 | `total_structs` | INTEGER | |
-| `padded_structs` | INTEGER | Structs with bytes_saved > 0 |
-| `bytes_saved` | INTEGER | Sum across all structs |
+| `padded_structs` | INTEGER | Declarations with bytes_saved > 0 |
+| `bytes_saved` | INTEGER | Sum across all declarations |
 | `ignore_patterns` | TEXT | JSON array of regex strings |
 | `target_arch` | TEXT | `"amd64"` or `"arm64"` |
+| `language` | TEXT | `"go"` or `"typescript"` (added in 1.1.0; defaults to `"go"` for existing rows) |
 
 **Schema — `struct_results` table**
 
@@ -199,21 +204,50 @@ All database logic. Initializes the schema on first run and exposes typed functi
 | `optimized_def` | TEXT | Reordered definition with added comment header |
 | `has_generics` | INTEGER | Boolean (0/1); sizes are approximate |
 | `has_embedded` | INTEGER | Boolean (0/1) |
+| `declaration_kind` | TEXT | `"struct"` for Go; `"class"`, `"interface"`, or `"type"` for TypeScript (added in 1.1.0; defaults to `"struct"` for existing rows) |
 
 ### `parser.rs`
 
-Walks a repository using `ignore::Walk` — automatically respects `.gitignore` and skips `vendor/`. User-supplied ignore patterns (regex strings) are compiled into a `RegexSet` before the walk begins and tested against each file's repo-relative path. Uses brace-counting (not pure regex) to reliably extract `type Name[TypeParams] struct { ... }` blocks including generic structs. Captures doc comments (`//`-prefixed lines immediately preceding `type Name struct`) and preserves inline field comments and struct tags.
+Walks a **Go** repository using `ignore::Walk` — automatically respects `.gitignore` and skips `vendor/` and `testdata/`. User-supplied ignore patterns (regex strings) are compiled into a `RegexSet` before the walk begins and tested against each file's repo-relative path. Uses brace-counting (not pure regex) to reliably extract `type Name[TypeParams] struct { ... }` blocks including generic structs. Captures doc comments (`//`-prefixed lines immediately preceding `type Name struct`) and preserves inline field comments and struct tags.
+
+### `ts_parser.rs`
+
+Walks a **TypeScript** repository using the same `ignore::Walk` infrastructure. Hard-skips `node_modules/`, `dist/`, `build/`, `.next/`, `.nuxt/`, `coverage/`, and `.cache/` in addition to `.gitignore` exclusions. Accepts `.ts` and `.tsx` files.
+
+Parsing is done with [`oxc_parser`](https://crates.io/crates/oxc_parser) (pure Rust, no C build step). The parser produces a typed AST from which the following top-level constructs are extracted:
+
+- `class` declarations — instance `PropertyDefinition` nodes (static properties are skipped)
+- `interface` declarations — `TSPropertySignature` nodes
+- object `type` aliases (`type Foo = { ... }`) — `TSPropertySignature` nodes inside `TSTypeLiteral`
+
+Exported and non-exported variants, including `export default class`, are all handled. For each property the raw source line is captured via `span` byte offsets for use in reconstructed definitions.
 
 ### `analyzer.rs`
 
+Contains two independent analysis pipelines that share the same core layout primitives (`align_up`, `struct_layout`, optimal-sort by align desc / size desc / name asc).
+
+**Go pipeline (`analyze_files`)**
+
 Two-pass analysis:
 
-1. **Pass 1** — parse all files and build a `HashMap<String, StructInfo>` registry mapping type names to their computed size and alignment.
-2. **Pass 2** — for each struct, resolve embedded types recursively from the registry, compute current size (with padding), compute optimal size (fields sorted by alignment descending, ties broken by size then name), and generate the `optimized_def` string.
+1. **Pass 1** — parse all files and build a `HashMap<String, TypeInfo>` registry mapping type names to their computed size and alignment.
+2. **Pass 2** — for each struct, resolve embedded types recursively from the registry, compute current size (with padding), compute optimal size, and generate the `optimized_def` string with a `// Reordered for optimal memory alignment` header.
 
-The `Arch` enum (`Amd64` | `Arm64`) selects the type-size/alignment table. Current tables are identical for both 64-bit targets. Generic type parameters and unresolved types default to size 8 / align 8 and are flagged `has_generics = true`.
+The `Arch` enum (`Amd64` | `Arm64`) selects the type-size/alignment table. Generic type parameters and unresolved types default to size 8 / align 8 and set `approximate = true`.
 
-**Type table (amd64 / arm64)**
+**TypeScript pipeline (`analyze_ts_files`)**
+
+Single-pass analysis using the V8 type-size model:
+
+| TypeScript type | V8 representation | Size | Align |
+|---|---|---|---|
+| `number` | Unboxed Double | 8 B | 8 |
+| `any`, `unknown`, `never`, `void` | Tagged pointer (conservative) | 4 B | 4 |
+| Everything else | Tagged/compressed pointer | 4 B | 4 |
+
+Types with generics (`has_generics`) or that extend/implement other types (`has_embedded`) are flagged `approximate = true`. The `declaration_kind` field on `AnalyzedStruct` is set to `"class"`, `"interface"`, or `"type"`. The `optimized_def` header is `// Reordered for optimal V8 memory layout`.
+
+**Go type table (amd64 / arm64)**
 
 | Go type(s) | Size (bytes) | Align (bytes) |
 |---|---|---|
@@ -264,7 +298,8 @@ invoke<ScanSummary>('scan_repo', {
 ```ts
 interface ScanOptions {
   ignore_patterns: string[];  // regex strings; matched against repo-relative file paths
-  target_arch: string;        // "amd64" | "arm64"
+  target_arch: string;        // "amd64" | "arm64" (used only when language is "go")
+  language: string;           // "go" | "typescript"
 }
 ```
 
@@ -314,6 +349,7 @@ interface ScanSummary {
   bytes_saved: number;
   ignore_patterns: string[];
   target_arch: string;      // "amd64" | "arm64"
+  language: string;         // "go" | "typescript"
 }
 ```
 
@@ -364,6 +400,7 @@ interface StructSummary {
   bytes_saved: number;
   has_generics: boolean;
   has_embedded: boolean;
+  declaration_kind: string;  // "struct" | "class" | "interface" | "type"
 }
 ```
 
@@ -389,10 +426,11 @@ interface StructDetail {
   current_size: number;
   optimal_size: number;
   bytes_saved: number;
-  current_def: string;    // original struct source
-  optimized_def: string;  // reordered struct with "// Reordered for optimal memory alignment" header
+  current_def: string;    // original source
+  optimized_def: string;  // reordered source with comment header
   has_generics: boolean;
   has_embedded: boolean;
+  declaration_kind: string;  // "struct" | "class" | "interface" | "type"
 }
 ```
 

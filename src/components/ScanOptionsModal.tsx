@@ -1,7 +1,8 @@
 import { Dialog } from "@kobalte/core/dialog";
 import type { Component } from "solid-js";
-import { createSignal, For } from "solid-js";
+import { createSignal, For, Show } from "solid-js";
 import type { ScanOptions } from "@/types";
+import { getPlaceholderText } from "@/util";
 
 interface Props {
 	open: boolean;
@@ -12,6 +13,9 @@ interface Props {
 }
 
 const ScanOptionsModal: Component<Props> = (props) => {
+	const [language, setLanguage] = createSignal(
+		props.initialOptions?.language ?? "go",
+	);
 	const [arch, setArch] = createSignal(
 		props.initialOptions?.target_arch ?? "amd64",
 	);
@@ -46,7 +50,11 @@ const ScanOptionsModal: Component<Props> = (props) => {
 			.split("\n")
 			.map((p) => p.trim())
 			.filter(Boolean);
-		props.onStart({ ignore_patterns: patterns, target_arch: arch() });
+		props.onStart({
+			ignore_patterns: patterns,
+			target_arch: arch(),
+			language: language(),
+		});
 	};
 
 	return (
@@ -66,36 +74,74 @@ const ScanOptionsModal: Component<Props> = (props) => {
 							{props.repoPath}
 						</p>
 
-						{/* Architecture */}
+						{/* Language */}
 						<div class="mb-5">
 							<p class="text-xs font-medium text-neutral-500 uppercase tracking-widest mb-2">
-								Target Architecture
+								Language
 							</p>
 							<div class="flex gap-0 border border-neutral-200 dark:border-neutral-800 w-fit">
 								<button
 									type="button"
-									onClick={() => setArch("amd64")}
+									onClick={() => setLanguage("go")}
 									class={`px-4 py-2 text-sm font-medium transition-colors ${
-										arch() === "amd64"
+										language() === "go"
 											? "bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 cursor-default"
 											: "text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 cursor-pointer"
 									}`}
 								>
-									x86_64
+									Go
 								</button>
 								<button
 									type="button"
-									onClick={() => setArch("arm64")}
+									onClick={() => setLanguage("typescript")}
 									class={`px-4 py-2 text-sm font-medium border-l border-neutral-200 dark:border-neutral-800 transition-colors ${
-										arch() === "arm64"
+										language() === "typescript"
 											? "bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 cursor-default"
 											: "text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 cursor-pointer"
 									}`}
 								>
-									ARM64
+									TypeScript
 								</button>
 							</div>
+							<p class="text-xs text-neutral-400 mt-1.5">
+								{language() === "typescript"
+									? "Scans .ts / .tsx files for V8 JIT layout inefficiencies."
+									: "Scans .go files for struct field padding waste."}
+							</p>
 						</div>
+
+						{/* Architecture — only relevant for Go */}
+						<Show when={language() === "go"}>
+							<div class="mb-5">
+								<p class="text-xs font-medium text-neutral-500 uppercase tracking-widest mb-2">
+									Target Architecture
+								</p>
+								<div class="flex gap-0 border border-neutral-200 dark:border-neutral-800 w-fit">
+									<button
+										type="button"
+										onClick={() => setArch("amd64")}
+										class={`px-4 py-2 text-sm font-medium transition-colors ${
+											arch() === "amd64"
+												? "bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 cursor-default"
+												: "text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 cursor-pointer"
+										}`}
+									>
+										x86_64
+									</button>
+									<button
+										type="button"
+										onClick={() => setArch("arm64")}
+										class={`px-4 py-2 text-sm font-medium border-l border-neutral-200 dark:border-neutral-800 transition-colors ${
+											arch() === "arm64"
+												? "bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 cursor-default"
+												: "text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 cursor-pointer"
+										}`}
+									>
+										ARM64
+									</button>
+								</div>
+							</div>
+						</Show>
 
 						{/* Ignore patterns */}
 						<div class="mb-6">
@@ -115,7 +161,7 @@ const ScanOptionsModal: Component<Props> = (props) => {
 									setPatternsText(e.currentTarget.value);
 									setErrors([]);
 								}}
-								placeholder={".*\\.pb\\.go$\n.*_test\\.go$"}
+								placeholder={getPlaceholderText(language())}
 								rows={4}
 								class="w-full bg-transparent border border-neutral-200 dark:border-neutral-800 px-3 py-2 text-sm font-mono text-neutral-900 dark:text-neutral-100 placeholder-neutral-300 dark:placeholder-neutral-700 focus:outline-none focus:border-neutral-400 dark:focus:border-neutral-600 resize-none transition-colors"
 							/>

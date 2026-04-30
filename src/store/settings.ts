@@ -7,6 +7,7 @@ const defaultSettings: AppSettings = {
 	theme: "dark",
 	defaultArch: "amd64",
 	defaultIgnorePatterns: [],
+	defaultLanguage: "go",
 };
 
 function loadSettings(): AppSettings {
@@ -32,6 +33,8 @@ export function updateSettings(patch: Partial<AppSettings>): void {
 		setSettingsStore("defaultArch", patch.defaultArch);
 	if (patch.defaultIgnorePatterns !== undefined)
 		setSettingsStore("defaultIgnorePatterns", patch.defaultIgnorePatterns);
+	if (patch.defaultLanguage !== undefined)
+		setSettingsStore("defaultLanguage", patch.defaultLanguage);
 	try {
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
 	} catch {

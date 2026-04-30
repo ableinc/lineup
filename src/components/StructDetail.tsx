@@ -24,7 +24,12 @@ const StructDetailPanel: Component<Props> = (props) => {
 				<div class="flex items-center gap-2 flex-wrap mb-1">
 					<h2 class="font-mono font-semibold text-sm text-neutral-900 dark:text-neutral-100">
 						{props.detail.struct_name}
-					</h2>
+					</h2>{" "}
+					{props.detail.declaration_kind !== "struct" && (
+						<span class="text-xs border border-neutral-300 dark:border-neutral-700 px-1.5 py-0.5 text-neutral-400">
+							{props.detail.declaration_kind}
+						</span>
+					)}{" "}
 					{props.detail.has_generics && (
 						<span class="text-xs border border-neutral-300 dark:border-neutral-700 px-1.5 py-0.5 text-neutral-400">
 							~approx

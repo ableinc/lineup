@@ -11,6 +11,7 @@ pub struct ScanSummary {
     pub bytes_saved: i64,
     pub ignore_patterns: Vec<String>,
     pub target_arch: String,
+    pub language: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -29,6 +30,7 @@ pub struct StructSummary {
     pub bytes_saved: i64,
     pub has_generics: bool,
     pub has_embedded: bool,
+    pub declaration_kind: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -45,6 +47,7 @@ pub struct StructDetail {
     pub optimized_def: String,
     pub has_generics: bool,
     pub has_embedded: bool,
+    pub declaration_kind: String,
 }
 
 pub fn init_db(conn: &Connection) -> Result<()> {
@@ -77,7 +80,11 @@ pub fn init_db(conn: &Connection) -> Result<()> {
              has_generics INTEGER NOT NULL DEFAULT 0,
              has_embedded INTEGER NOT NULL DEFAULT 0
          );",
-    )
+    )?;
+    // Additive migrations — silently ignored on existing databases
+    let _ = conn.execute("ALTER TABLE scans ADD COLUMN language TEXT NOT NULL DEFAULT 'go'", []);
+    let _ = conn.execute("ALTER TABLE struct_results ADD COLUMN declaration_kind TEXT NOT NULL DEFAULT 'struct'", []);
+    Ok(())
 }
 
 pub fn save_scan(
@@ -89,12 +96,13 @@ pub fn save_scan(
     bytes_saved: i64,
     ignore_patterns: &[String],
     target_arch: &str,
+    language: &str,
 ) -> Result<i64> {
     let patterns_json = serde_json::to_string(ignore_patterns).unwrap_or_else(|_| "[]".to_string());
     conn.execute(
-        "INSERT INTO scans (repo_path, scanned_at, total_structs, padded_structs, bytes_saved, ignore_patterns, target_arch)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-        params![repo_path, scanned_at, total_structs, padded_structs, bytes_saved, patterns_json, target_arch],
+        "INSERT INTO scans (repo_path, scanned_at, total_structs, padded_structs, bytes_saved, ignore_patterns, target_arch, language)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+        params![repo_path, scanned_at, total_structs, padded_structs, bytes_saved, patterns_json, target_arch, language],
     )?;
     Ok(conn.last_insert_rowid())
 }
@@ -112,16 +120,18 @@ pub fn save_struct_result(
     optimized_def: &str,
     has_generics: bool,
     has_embedded: bool,
+    declaration_kind: &str,
 ) -> Result<i64> {
     conn.execute(
         "INSERT INTO struct_results
-         (scan_id, file_path, struct_name, line_number, current_size, optimal_size, bytes_saved, current_def, optimized_def, has_generics, has_embedded)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
+         (scan_id, file_path, struct_name, line_number, current_size, optimal_size, bytes_saved, current_def, optimized_def, has_generics, has_embedded, declaration_kind)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
         params![
             scan_id, file_path, struct_name, line_number,
             current_size, optimal_size, bytes_saved,
             current_def, optimized_def,
-            has_generics as i64, has_embedded as i64
+            has_generics as i64, has_embedded as i64,
+            declaration_kind
         ],
     )?;
     Ok(conn.last_insert_rowid())
@@ -129,7 +139,7 @@ pub fn save_struct_result(
 
 pub fn get_history(conn: &Connection) -> Result<Vec<ScanSummary>> {
     let mut stmt = conn.prepare(
-        "SELECT id, repo_path, scanned_at, total_structs, padded_structs, bytes_saved, ignore_patterns, target_arch
+        "SELECT id, repo_path, scanned_at, total_structs, padded_structs, bytes_saved, ignore_patterns, target_arch, language
          FROM scans ORDER BY scanned_at DESC",
     )?;
     let rows = stmt.query_map([], |row| {
@@ -145,6 +155,7 @@ pub fn get_history(conn: &Connection) -> Result<Vec<ScanSummary>> {
             bytes_saved: row.get(5)?,
             ignore_patterns,
             target_arch: row.get(7)?,
+            language: row.get::<_, Option<String>>(8)?.unwrap_or_else(|| "go".to_string()),
         })
     })?;
     rows.collect()
@@ -152,7 +163,7 @@ pub fn get_history(conn: &Connection) -> Result<Vec<ScanSummary>> {
 
 pub fn get_scan_detail(conn: &Connection, scan_id: i64) -> Result<Vec<FileScanResult>> {
     let mut stmt = conn.prepare(
-        "SELECT id, file_path, struct_name, line_number, current_size, optimal_size, bytes_saved, has_generics, has_embedded
+        "SELECT id, file_path, struct_name, line_number, current_size, optimal_size, bytes_saved, has_generics, has_embedded, declaration_kind
          FROM struct_results WHERE scan_id = ?1 ORDER BY file_path, line_number",
     )?;
     let mut file_map: std::collections::BTreeMap<String, Vec<StructSummary>> =
@@ -169,6 +180,7 @@ pub fn get_scan_detail(conn: &Connection, scan_id: i64) -> Result<Vec<FileScanRe
                 bytes_saved: row.get(6)?,
                 has_generics: row.get::<_, i64>(7)? != 0,
                 has_embedded: row.get::<_, i64>(8)? != 0,
+                declaration_kind: row.get::<_, Option<String>>(9)?.unwrap_or_else(|| "struct".to_string()),
             },
         ))
     })?;
@@ -184,7 +196,7 @@ pub fn get_scan_detail(conn: &Connection, scan_id: i64) -> Result<Vec<FileScanRe
 
 pub fn get_struct_detail(conn: &Connection, struct_id: i64) -> Result<StructDetail> {
     conn.query_row(
-        "SELECT id, scan_id, file_path, struct_name, line_number, current_size, optimal_size, bytes_saved, current_def, optimized_def, has_generics, has_embedded
+        "SELECT id, scan_id, file_path, struct_name, line_number, current_size, optimal_size, bytes_saved, current_def, optimized_def, has_generics, has_embedded, declaration_kind
          FROM struct_results WHERE id = ?1",
         [struct_id],
         |row| {
@@ -201,6 +213,7 @@ pub fn get_struct_detail(conn: &Connection, struct_id: i64) -> Result<StructDeta
                 optimized_def: row.get(9)?,
                 has_generics: row.get::<_, i64>(10)? != 0,
                 has_embedded: row.get::<_, i64>(11)? != 0,
+                declaration_kind: row.get::<_, Option<String>>(12)?.unwrap_or_else(|| "struct".to_string()),
             })
         },
     )

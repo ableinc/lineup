@@ -875,7 +875,7 @@ packages:
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
     os: [darwin]
 
-  gensync@1.0.0-beta.2:
+  gensync@1.1.0-beta.2:
     resolution: {integrity: sha512-3hN7NaskYvMDLQY55gnW3NQ+mesEAepTqlg+VEbj7zzqEMBVNhzcGYYeqFo/TlYz6eQiFcp1HcsCZO+nGgS8zg==}
     engines: {node: '>=6.9.0'}
 
@@ -1174,7 +1174,7 @@ snapshots:
       '@jridgewell/remapping': 2.3.5
       convert-source-map: 2.0.0
       debug: 4.4.3
-      gensync: 1.0.0-beta.2
+      gensync: 1.1.0-beta.2
       json5: 2.2.3
       semver: 6.3.1
     transitivePeerDependencies:
@@ -1821,7 +1821,7 @@ snapshots:
   fsevents@2.3.3:
     optional: true
 
-  gensync@1.0.0-beta.2: {}
+  gensync@1.1.0-beta.2: {}
 
   graceful-fs@4.2.11: {}
 

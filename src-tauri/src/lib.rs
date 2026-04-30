@@ -9,10 +9,11 @@ use tauri::{AppHandle, Emitter, Manager, State};
 
 mod analyzer;
 mod db;
-mod parser;
+mod parsers;
 
 use analyzer::Arch;
 use db::{FileScanResult, ScanSummary, StructDetail};
+use parsers::{go_parser, ts_parser};
 
 pub struct AppState {
     pub conn: Mutex<Connection>,
@@ -23,6 +24,8 @@ pub struct AppState {
 pub struct ScanOptions {
     pub ignore_patterns: Vec<String>,
     pub target_arch: String,
+    /// "go" or "typescript"
+    pub language: String,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -54,6 +57,8 @@ async fn scan_repo(
 
     let arch: Arch = opts.target_arch.parse().unwrap_or(Arch::Amd64);
     let ignore_patterns = opts.ignore_patterns.clone();
+    let language = opts.language.clone();
+    let is_typescript = language == "typescript";
 
     let _ = app.emit(
         "scan-progress",
@@ -67,13 +72,19 @@ async fn scan_repo(
     let path = Path::new(&repo_path).to_path_buf();
     let patterns_clone = ignore_patterns.clone();
 
-    let files = parser::walk_repo(&path, &patterns_clone);
+    let files_go;
+    let files_ts;
+    let total_files;
 
-    if cancel.load(Ordering::SeqCst) {
-        return Err("cancelled".to_string());
-    }
-
-    let total_files = files.len().max(1);
+    let analyzed = if is_typescript {
+        files_ts = ts_parser::walk_ts_repo(&path, &patterns_clone);
+        total_files = files_ts.len().max(1);
+        analyzer::analyze_ts_files(&files_ts)
+    } else {
+        files_go = go_parser::walk_repo(&path, &patterns_clone);
+        total_files = files_go.len().max(1);
+        analyzer::analyze_files(&files_go, arch)
+    };
     let mut total_structs: i64 = 0;
     let mut padded_structs: i64 = 0;
     let mut total_bytes_saved: i64 = 0;
@@ -94,10 +105,9 @@ async fn scan_repo(
         0,
         &ignore_patterns,
         arch.as_str(),
+        &language,
     )
     .map_err(|e| e.to_string())?;
-
-    let analyzed = analyzer::analyze_files(&files, arch);
 
     for (idx, (file_path, s)) in analyzed.iter().enumerate() {
         if cancel.load(Ordering::SeqCst) {
@@ -134,6 +144,7 @@ async fn scan_repo(
             &s.optimized_def,
             s.has_generics,
             s.has_embedded,
+            &s.declaration_kind,
         )
         .map_err(|e| e.to_string())?;
     }
@@ -162,6 +173,7 @@ async fn scan_repo(
         bytes_saved: total_bytes_saved,
         ignore_patterns,
         target_arch: arch.as_str().to_string(),
+        language,
     })
 }
 
