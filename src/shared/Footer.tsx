@@ -10,7 +10,7 @@ export default function Footer() {
 				{/* full-width row so spans can sit at the far left and far right */}
 				<div class="w-full flex items-center justify-between text-xs text-neutral-400 h-full px-0">
 					<span class="pl-4">Lineup v{version()}</span>
-					<span class="pr-4">Go struct padding analyzer</span>
+					<span class="pr-4">Type padding analyzer</span>
 				</div>
 			</div>
 		</footer>

@@ -2,6 +2,8 @@ use std::path::Path;
 use ignore::Walk;
 use regex::RegexSet;
 
+use crate::parsers::SKIP_DIRS;
+
 #[derive(Debug, Clone)]
 pub struct GoField {
     pub name: String,
@@ -51,10 +53,7 @@ pub fn walk_repo(repo_path: &Path, ignore_patterns: &[String]) -> Vec<GoFile> {
 
         // Skip vendor and testdata directories
         let rel_str = rel.as_ref();
-        if rel_str.starts_with("vendor/")
-            || rel_str.contains("/vendor/")
-            || rel_str.starts_with("testdata/")
-            || rel_str.contains("/testdata/")
+        if SKIP_DIRS.iter().any(|d| rel_str.starts_with(d) || rel_str.contains(&format!("/{}/", d)))
         {
             continue;
         }

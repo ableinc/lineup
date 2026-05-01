@@ -88,7 +88,7 @@ const Home: Component = () => {
 		if (id === null) {
 			toast.error("No scan selected for deletion");
 			return;
-		};
+		}
 		await invoke("delete_scan", { scanId: id });
 		setPendingDeleteId(null);
 		await loadHistory();
@@ -107,9 +107,7 @@ const Home: Component = () => {
 				<div class="flex items-center justify-between mb-12">
 					<div>
 						<h1 class="text-xl font-semibold tracking-tight">Lineup</h1>
-						<p class="text-neutral-500 text-sm mt-0.5">
-							Go struct padding analyzer
-						</p>
+						<p class="text-neutral-500 text-sm mt-0.5">Type padding analyzer</p>
 					</div>
 					<div class="flex items-center gap-3">
 						<button
@@ -186,6 +184,7 @@ const Home: Component = () => {
 				initialOptions={{
 					target_arch: settings.defaultArch,
 					ignore_patterns: settings.defaultIgnorePatterns,
+					language: settings.defaultLanguage,
 				}}
 				onStart={startScan}
 				onCancel={() => setShowOptions(false)}

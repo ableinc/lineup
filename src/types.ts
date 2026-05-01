@@ -1,3 +1,5 @@
+export type PARSER_LANGUAGE = "GO" | "TS";
+
 export interface ScanSummary {
 	id: number;
 	repo_path: string;
@@ -7,6 +9,7 @@ export interface ScanSummary {
 	bytes_saved: number;
 	ignore_patterns: string[];
 	target_arch: string;
+	language: PARSER_LANGUAGE;
 }
 
 export interface StructSummary {
@@ -18,6 +21,7 @@ export interface StructSummary {
 	bytes_saved: number;
 	has_generics: boolean;
 	has_embedded: boolean;
+	declaration_kind: string;
 }
 
 export interface FileScanResult {
@@ -38,11 +42,13 @@ export interface StructDetail {
 	optimized_def: string;
 	has_generics: boolean;
 	has_embedded: boolean;
+	declaration_kind: string;
 }
 
 export interface ScanOptions {
 	ignore_patterns: string[];
 	target_arch: string;
+	language: PARSER_LANGUAGE;
 }
 
 export interface ScanProgressEvent {
@@ -55,4 +61,5 @@ export interface AppSettings {
 	theme: "dark" | "light";
 	defaultArch: string;
 	defaultIgnorePatterns: string[];
+	defaultLanguage: PARSER_LANGUAGE;
 }

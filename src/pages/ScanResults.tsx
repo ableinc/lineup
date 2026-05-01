@@ -142,7 +142,10 @@ const ScanResults: Component = () => {
 					{scanMeta()?.repo_path}
 				</span>
 				<div class="flex items-center gap-4 text-xs text-neutral-400 tabular-nums">
-					<span>{scanMeta()?.total_structs ?? 0} structs</span>
+					<span>
+						{scanMeta()?.total_structs ?? 0}{" "}
+						{scanMeta()?.language === "TS" ? "declarations" : "structs"}
+					</span>
 					<span>{scanMeta()?.padded_structs ?? 0} padded</span>
 					<span>{scanMeta()?.bytes_saved ?? 0} B saveable</span>
 				</div>
@@ -159,7 +162,7 @@ const ScanResults: Component = () => {
 				{/* Left: FileTree */}
 				<aside
 					class="border-r border-neutral-200 dark:border-neutral-800 overflow-y-auto shrink-0"
-					style={{ width: `${leftWidth()}px`, ["min-width"]: "120px" }}
+					style={{ width: `${leftWidth()}px`, "min-width": "120px" }}
 				>
 					<Show
 						when={files()}
@@ -239,7 +242,7 @@ const ScanResults: Component = () => {
 				{/* Right: StructDetail */}
 				<aside
 					class="overflow-y-auto shrink-0"
-					style={{ width: `${rightWidth()}px`, ["min-width"]: "200px" }}
+					style={{ width: `${rightWidth()}px`, "min-width": "200px" }}
 				>
 					<Show
 						when={selectedStruct()}
@@ -260,6 +263,7 @@ const ScanResults: Component = () => {
 				initialOptions={{
 					ignore_patterns: scanMeta()?.ignore_patterns ?? [],
 					target_arch: scanMeta()?.target_arch ?? "amd64",
+					language: scanMeta()?.language ?? "GO",
 				}}
 				onStart={startRescan}
 				onCancel={() => setShowRescan(false)}

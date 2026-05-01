@@ -2,6 +2,7 @@ import { useNavigate } from "@solidjs/router";
 import type { Component } from "solid-js";
 import { createSignal, For, Show } from "solid-js";
 import { settings, updateSettings } from "@/store/settings";
+import { getPlaceholderText } from "@/util";
 
 const Settings: Component = () => {
 	const navigate = useNavigate();
@@ -84,6 +85,42 @@ const Settings: Component = () => {
 							Scan Defaults
 						</h2>
 						<div class="border-t border-neutral-200 dark:border-neutral-800">
+							{" "}
+							{/* Default Language */}
+							<div class="flex items-center justify-between py-4 border-b border-neutral-100 dark:border-neutral-900">
+								<div>
+									<p class="text-sm text-neutral-900 dark:text-neutral-100">
+										Default Language
+									</p>
+									<p class="text-xs text-neutral-400 mt-0.5">
+										Pre-selected when starting a new scan
+									</p>
+								</div>
+								<div class="flex gap-0 border border-neutral-200 dark:border-neutral-800">
+									<button
+										type="button"
+										onClick={() => updateSettings({ defaultLanguage: "GO" })}
+										class={`px-4 py-2 text-sm font-medium transition-colors ${
+											settings.defaultLanguage === "GO"
+												? "bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 cursor-default"
+												: "text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 cursor-pointer"
+										}`}
+									>
+										Go
+									</button>
+									<button
+										type="button"
+										onClick={() => updateSettings({ defaultLanguage: "TS" })}
+										class={`px-4 py-2 text-sm font-medium border-l border-neutral-200 dark:border-neutral-800 transition-colors ${
+											settings.defaultLanguage === "TS"
+												? "bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 cursor-default"
+												: "text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 cursor-pointer"
+										}`}
+									>
+										TypeScript
+									</button>
+								</div>
+							</div>
 							{/* Default Architecture */}
 							<div class="flex items-center justify-between py-4 border-b border-neutral-100 dark:border-neutral-900">
 								<div>
@@ -119,7 +156,6 @@ const Settings: Component = () => {
 									</button>
 								</div>
 							</div>
-
 							{/* Default Ignore Patterns */}
 							<div class="py-4 space-y-3 border-b border-neutral-100 dark:border-neutral-900">
 								<div>
@@ -134,7 +170,7 @@ const Settings: Component = () => {
 									value={patternsText()}
 									onInput={(e) => setPatternsText(e.currentTarget.value)}
 									onBlur={savePatterns}
-									placeholder={"vendor/\ngenerated/\n_test\\.go$"}
+									placeholder={getPlaceholderText(settings.defaultLanguage)}
 									rows={5}
 									class="w-full bg-transparent border border-neutral-200 dark:border-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 font-mono placeholder-neutral-300 dark:placeholder-neutral-700 focus:outline-none focus:border-neutral-400 dark:focus:border-neutral-600 resize-none transition-colors"
 									autocomplete="off"
