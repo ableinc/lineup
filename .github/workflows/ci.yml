@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  NODE_VERSION: 24.x
+
 jobs:
   # ── Frontend ──────────────────────────────────────────────────────────────
   frontend:
@@ -15,23 +18,16 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
-      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320
+      - name: Setup pnpm
+        uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061
         with:
-          version: 9
+          version: 10.33.0
 
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
         with:
-          node-version: 24
-
-      - name: Get pnpm store path
-        id: pnpm-cache
-        run: echo "store=$(pnpm store path)" >> $GITHUB_OUTPUT
-
-      - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae
-        with:
-          path: ${{ steps.pnpm-cache.outputs.store }}
-          key: pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: pnpm-store-
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
