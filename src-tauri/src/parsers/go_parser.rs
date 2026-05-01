@@ -2,7 +2,7 @@ use std::path::Path;
 use ignore::Walk;
 use regex::RegexSet;
 
-const GO_SKIP_DIRS: &[&str] = &["vendor", "testdata"];
+use crate::parsers::SKIP_DIRS;
 
 #[derive(Debug, Clone)]
 pub struct GoField {
@@ -53,7 +53,7 @@ pub fn walk_repo(repo_path: &Path, ignore_patterns: &[String]) -> Vec<GoFile> {
 
         // Skip vendor and testdata directories
         let rel_str = rel.as_ref();
-        if GO_SKIP_DIRS.iter().any(|d| rel_str.starts_with(d) || rel_str.contains(&format!("/{}/", d)))
+        if SKIP_DIRS.iter().any(|d| rel_str.starts_with(d) || rel_str.contains(&format!("/{}/", d)))
         {
             continue;
         }

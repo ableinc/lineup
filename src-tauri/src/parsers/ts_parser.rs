@@ -7,16 +7,7 @@ use oxc_parser::Parser;
 use oxc_span::SourceType;
 use regex::RegexSet;
 
-/// Directories to always skip when walking a TypeScript project.
-const TS_SKIP_DIRS: &[&str] = &[
-    "node_modules",
-    "dist",
-    "build",
-    ".next",
-    ".nuxt",
-    "coverage",
-    ".cache",
-];
+use crate::parsers::SKIP_DIRS;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TsDeclKind {
@@ -62,7 +53,7 @@ pub struct TsFile {
 }
 
 fn should_skip(rel_str: &str) -> bool {
-    for dir in TS_SKIP_DIRS {
+    for dir in SKIP_DIRS {
         if rel_str.starts_with(&format!("{dir}/")) || rel_str.contains(&format!("/{dir}/")) {
             return true;
         }
