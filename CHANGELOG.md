@@ -42,6 +42,19 @@ All notable changes to Lineup are documented here.
 
 - Added `oxc_allocator`, `oxc_parser`, `oxc_ast`, `oxc_span` at version `0.128.0` (pure Rust TypeScript/JSX parser).
 
+### UI improvements
+
+- **History card language badge** — the language is now displayed as a bordered monospace pill (`GO` / `TS`) next to the repo path instead of inline parenthetical text. The path remains truncatable while the badge is always fully visible.
+- **Language-aware ignore pattern placeholders** — the ignore patterns textarea in the Scan Options modal and in Settings now shows language-appropriate placeholder examples. Go shows `vendor/`, `generated/`, `_test\.go$`; TypeScript shows `\.test\.tsx?$`, `\.spec\.tsx?$`, `\.d\.ts$`. The modal placeholder updates reactively when the language toggle is switched.
+
+### Internal
+
+- **`PARSER_LANGUAGE` type narrowed to `"GO" | "TS"`** — language values are now uppercase string literals throughout the frontend (`types.ts`, `util.ts`, settings store, all components and pages) and stored as `"GO"` / `"TS"` in the SQLite database. The database `DEFAULT` and Rust fallback values updated to match.
+- **GitHub Actions CI pipeline** (`.github/workflows/ci.yml`) — two jobs running on `ubuntu-24.04`:
+  - *Frontend*: pnpm install (frozen lockfile) → Biome lint → `tsc --noEmit` type-check → Vite build. Uses `actions/setup-node` pnpm store cache.
+  - *Backend*: apt system-dep cache → Tauri Linux deps → `cargo check` → `cargo clippy` → `cargo test`. Uses `Swatinem/rust-cache` with `cache-on-failure` and a shared cache key across branches.
+  - All action references pinned to full commit SHAs. Triggers on push to `main` and `develop`, and on PRs targeting `main`.
+
 ---
 
 ## [1.0.0] — initial release
